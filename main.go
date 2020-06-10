@@ -19,6 +19,7 @@ package main
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"text/template"
 
 	"github.com/hashicorp/go-getter"
@@ -35,13 +36,21 @@ func main() {
 	flag.Parse()
 
 	localTplFile := "/tmp/template.txt"
-	err := getter.GetFile(localTplFile, *tplFile)
+	opts := func(c *getter.Client) error {
+		pwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		c.Pwd = pwd
+		return nil
+	}
+	err := getter.GetFile(localTplFile, *tplFile, opts)
 	if err != nil {
 		panic(err)
 	}
 
 	localDataFile := "/tmp/template-data.txt"
-	err = getter.GetFile(localDataFile, *dataFile)
+	err = getter.GetFile(localDataFile, *dataFile, opts)
 	if err != nil {
 		panic(err)
 	}
@@ -57,7 +66,7 @@ func main() {
 		panic(err)
 	}
 
-	tpl := template.Must(template.New("tpl").ParseFiles(localTplFile))
+	tpl := template.Must(template.New(filepath.Base(localTplFile)).ParseFiles(localTplFile))
 	err = tpl.Execute(os.Stdout, &data)
 	if err != nil {
 		panic(err)
