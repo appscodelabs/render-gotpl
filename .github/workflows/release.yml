@@ -40,7 +40,6 @@ jobs:
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        draft: true
         files: |
           bin/render-gotpl-linux-amd64
           bin/render-gotpl-linux-arm
