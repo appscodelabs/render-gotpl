@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"text/template"
 
+	"github.com/Masterminds/sprig"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-getter"
 	flag "github.com/spf13/pflag"
@@ -68,7 +69,7 @@ func main() {
 		panic(err)
 	}
 
-	tpl := template.Must(template.New(filepath.Base(localTplFile)).ParseFiles(localTplFile))
+	tpl := template.Must(template.New(filepath.Base(localTplFile)).Funcs(sprig.TxtFuncMap()).ParseFiles(localTplFile))
 	err = tpl.Execute(os.Stdout, &data)
 	if err != nil {
 		panic(err)
