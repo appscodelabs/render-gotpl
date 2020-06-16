@@ -30,15 +30,20 @@ import (
 )
 
 var (
-	sessionID = uuid.New().String()
-	tplFile   = flag.String("template", "", "Path to Go template file (local file or url is accepted)")
-	dataFile  = flag.String("data", "", "Path to data file in JSON or YAML format (local file or url is accepted)")
+	sessionID  = uuid.New().String()
+	tplFile    string
+	tplPattern string
+	dataFile   string
 )
 
+func init() {
+	flag.StringVar(&tplFile, "template", "", "Path to Go template file (local file or url is accepted)")
+	flag.StringVar(&tplPattern, "pattern", "", "Pattern to select Go template files")
+	flag.StringVar(&dataFile, "data", "", "Path to data file in JSON or YAML format (local file or url is accepted)")
+}
 func main() {
 	flag.Parse()
 
-	localTplFile := filepath.Join(os.TempDir(), sessionID, "template.txt")
 	opts := func(c *getter.Client) error {
 		pwd, err := os.Getwd()
 		if err != nil {
@@ -47,13 +52,9 @@ func main() {
 		c.Pwd = pwd
 		return nil
 	}
-	err := getter.GetFile(localTplFile, *tplFile, opts)
-	if err != nil {
-		panic(err)
-	}
 
 	localDataFile := filepath.Join(os.TempDir(), sessionID, "template-data.txt")
-	err = getter.GetFile(localDataFile, *dataFile, opts)
+	err := getter.GetFile(localDataFile, dataFile, opts)
 	if err != nil {
 		panic(err)
 	}
@@ -69,7 +70,18 @@ func main() {
 		panic(err)
 	}
 
-	tpl := template.Must(template.New(filepath.Base(localTplFile)).Funcs(sprig.TxtFuncMap()).ParseFiles(localTplFile))
+	var tpl *template.Template
+	if tplPattern != "" {
+		tpl = template.Must(template.New(filepath.Base(tplFile)).Funcs(sprig.TxtFuncMap()).ParseGlob(tplPattern))
+	} else {
+		localTplFile := filepath.Join(os.TempDir(), sessionID, "template.txt")
+		err := getter.GetFile(localTplFile, tplFile, opts)
+		if err != nil {
+			panic(err)
+		}
+
+		tpl = template.Must(template.New(filepath.Base(localTplFile)).Funcs(sprig.TxtFuncMap()).ParseFiles(localTplFile))
+	}
 	err = tpl.Execute(os.Stdout, &data)
 	if err != nil {
 		panic(err)
