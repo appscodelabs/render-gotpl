@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"text/template"
 
-	"github.com/Masterminds/sprig"
+	"github.com/Masterminds/sprig/v3"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-getter"
 	flag "github.com/spf13/pflag"
