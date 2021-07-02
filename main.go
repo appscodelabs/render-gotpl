@@ -64,7 +64,7 @@ func main() {
 		panic(err)
 	}
 
-	var data map[string]interface{}
+	var data interface{}
 	err = yaml.Unmarshal(d, &data)
 	if err != nil {
 		panic(err)
