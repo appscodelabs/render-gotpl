@@ -1,0 +1,28 @@
+{
+    "providers":
+    [
+        "alicloud",
+        "aws",
+        "azurerm",
+        "civo",
+        "datadog",
+        "digitalocean",
+        "dynatrace",
+        "ec",
+        "equinixmetal",
+        "google",
+        "grafana",
+        "hcloud",
+        "ibm",
+        "linode",
+        "mongodbatlas",
+        "newrelic",
+        "ovh",
+        "pagerduty",
+        "rediscloud",
+        "upcloud",
+        "vsphere",
+        "vultr",
+        "wavefront"
+    ]
+}
