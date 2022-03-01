@@ -41,6 +41,7 @@ func init() {
 	flag.StringVar(&tplPattern, "pattern", "", "Pattern to select Go template files")
 	flag.StringVar(&dataFile, "data", "", "Path to data file in JSON or YAML format (local file or url is accepted)")
 }
+
 func main() {
 	flag.Parse()
 
