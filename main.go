@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -60,7 +59,7 @@ func main() {
 		panic(err)
 	}
 
-	d, err := ioutil.ReadFile(localDataFile)
+	d, err := os.ReadFile(localDataFile)
 	if err != nil {
 		panic(err)
 	}
