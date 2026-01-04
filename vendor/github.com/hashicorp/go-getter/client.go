@@ -1,7 +1,11 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package getter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -12,6 +16,9 @@ import (
 	urlhelper "github.com/hashicorp/go-getter/helper/url"
 	safetemp "github.com/hashicorp/go-safetemp"
 )
+
+// ErrSymlinkCopy means that a copy of a symlink was encountered on a request with DisableSymlinks enabled.
+var ErrSymlinkCopy = errors.New("copying of symlinks has been disabled")
 
 // Client is a client for downloading things.
 //
@@ -76,6 +83,9 @@ type Client struct {
 	// This is identical to tls.Config.InsecureSkipVerify.
 	Insecure bool
 
+	// Disable symlinks
+	DisableSymlinks bool
+
 	Options []ClientOption
 }
 
@@ -123,11 +133,22 @@ func (c *Client) Get() error {
 	dst := c.Dst
 	src, subDir := SourceDirSubdir(src)
 	if subDir != "" {
+		// Check if the subdirectory is attempting to traverse updwards, outside of
+		// the cloned repository path.
+		subDir = filepath.Clean(subDir)
+		if containsDotDot(subDir) {
+			return fmt.Errorf("subdirectory component contain path traversal out of the repository")
+		}
+		// Prevent absolute paths, remove a leading path separator from the subdirectory
+		if subDir[0] == os.PathSeparator {
+			subDir = subDir[1:]
+		}
+
 		td, tdcloser, err := safetemp.Dir("", "getter")
 		if err != nil {
 			return err
 		}
-		defer tdcloser.Close()
+		defer func() { _ = tdcloser.Close() }()
 
 		realDst = dst
 		dst = td
@@ -189,7 +210,7 @@ func (c *Client) Get() error {
 			return fmt.Errorf(
 				"Error creating temporary directory for archive: %s", err)
 		}
-		defer os.RemoveAll(td)
+		defer func() { _ = os.RemoveAll(td) }()
 
 		// Swap the download directory to be our temporary path and
 		// store the old values.
@@ -228,6 +249,10 @@ func (c *Client) Get() error {
 				u.RawQuery = q.Encode()
 
 				filename = v
+			}
+
+			if containsDotDot(filename) {
+				return fmt.Errorf("filename query parameter contain path traversal")
 			}
 
 			dst = filepath.Join(dst, filename)
@@ -298,7 +323,7 @@ func (c *Client) Get() error {
 		// if we're specifying a subdir.
 		err := g.Get(dst, u)
 		if err != nil {
-			err = fmt.Errorf("error downloading '%s': %s", u.Redacted(), err)
+			err = fmt.Errorf("error downloading '%s': %s", RedactURL(u), err)
 			return err
 		}
 	}
@@ -318,7 +343,7 @@ func (c *Client) Get() error {
 			return err
 		}
 
-		return copyDir(c.Ctx, realDst, subDir, false, c.umask())
+		return copyDir(c.Ctx, realDst, subDir, false, c.DisableSymlinks, c.umask())
 	}
 
 	return nil
